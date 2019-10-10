@@ -44,7 +44,6 @@ class App extends Component {
 			this.setState({ user: res.data, loading: false });
 		} catch (err) {
 			console.error(err);
-			this.setState({ loading: false });
 		}
 	};
 
@@ -73,7 +72,12 @@ class App extends Component {
 								path='/'
 								render={props => (
 									<Fragment>
-										<Search searchUsers={searchUsers} clearUsers={clearUsers} showClear={users.length > 0 ? true : false} setAlert={setAlert} />
+										<Search
+											searchUsers={searchUsers}
+											clearUsers={clearUsers}
+											showClear={users.length > 0 ? true : false}
+											setAlert={setAlert}
+										/>
 										<Users users={users} loading={loading} />
 									</Fragment>
 								)}
@@ -83,7 +87,7 @@ class App extends Component {
 								path='/user/:login'
 								render={({ username, ...otherProps }) => (
 									<Fragment>
-										<User getUser={getUser} {...otherProps} user={user} />
+										<User getUser={getUser} {...otherProps} user={user} loading={loading} />
 									</Fragment>
 								)}
 							/>
