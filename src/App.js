@@ -1,4 +1,4 @@
-import React, { Component, Fragment } from 'react';
+import React, { useState, Fragment } from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 
 import Navbar from './components/layout/Navbar';
@@ -9,58 +9,76 @@ import Search from './components/users/Search';
 import About from './components/pages/About';
 
 import github from './axios/github';
+import GithubState from './context/github/GithubState';
 
 import './App.css';
 
-class App extends Component {
-	state = {
-		users: [],
-		user: {},
-		loading: false,
-		alert: null
-	};
+const App = () => {
+	const [users, setUsers] = useState([]);
+	const [user, setUser] = useState({});
+	const [repos, setRepos] = useState([]);
+	const [loading, setLoading] = useState(false);
+	const [alert, setAlert] = useState(null);
 
 	// search github users
-	searchUsers = async text => {
-		this.setState({ loading: true });
+	const searchUsers = async text => {
+		setLoading(true);
 
 		try {
 			const res = await github.get(`/search/users?q=${text}`);
 			const users = res.data.items;
 
-			this.setState({ users, loading: false });
+			setUsers(users);
+			setLoading(false);
 		} catch (err) {
 			console.error(err);
 		}
 	};
 
 	// get single Github user details
-	getUser = async username => {
-		this.setState({ loading: true });
+	const getUser = async username => {
+		setLoading(true);
 
 		try {
 			const res = await github.get(`/users/${username}`);
+			const user = res.data;
 
-			this.setState({ user: res.data, loading: false });
+			setUser(user);
+			setLoading(false);
+		} catch (err) {
+			console.error(err);
+		}
+	};
+
+	// get user repos
+	const getUserRepos = async username => {
+		setLoading(true);
+
+		try {
+			const res = await github.get(`/users/${username}/repos?per_page=5&sort=created:asc`);
+			const repos = res.data;
+
+			setRepos(repos);
+			setLoading(false);
 		} catch (err) {
 			console.error(err);
 		}
 	};
 
 	// clear users from state
-	clearUsers = () => this.setState({ users: [], loading: false });
-
-	setAlert = (msg, type) => {
-		this.setState({ alert: { msg, type } });
-
-		setTimeout(() => this.setState({ alert: null }), 3500);
+	const clearUsers = () => {
+		setUsers([]);
+		setLoading(false);
 	};
 
-	render() {
-		const { searchUsers, clearUsers, setAlert, getUser } = this;
-		const { users, user, loading, alert } = this.state;
+	const showAlert = (msg, type) => {
+		setAlert({ msg, type });
 
-		return (
+		setTimeout(() => setAlert(null), 3500);
+	};
+
+	return (
+		<GithubState>
 			<Router>
 				<div>
 					<Navbar title='Github Finder' icon='fab fa-github' />
@@ -76,7 +94,7 @@ class App extends Component {
 											searchUsers={searchUsers}
 											clearUsers={clearUsers}
 											showClear={users.length > 0 ? true : false}
-											setAlert={setAlert}
+											setAlert={showAlert}
 										/>
 										<Users users={users} loading={loading} />
 									</Fragment>
@@ -87,7 +105,14 @@ class App extends Component {
 								path='/user/:login'
 								render={({ username, ...otherProps }) => (
 									<Fragment>
-										<User getUser={getUser} {...otherProps} user={user} loading={loading} />
+										<User
+											getUser={getUser}
+											getUserRepos={getUserRepos}
+											user={user}
+											loading={loading}
+											repos={repos}
+											{...otherProps}
+										/>
 									</Fragment>
 								)}
 							/>
@@ -95,7 +120,7 @@ class App extends Component {
 					</div>
 				</div>
 			</Router>
-		);
-	}
-}
+		</GithubState>
+	);
+};
 export default App;
